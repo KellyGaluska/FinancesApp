@@ -1,0 +1,301 @@
+<head>
+    <title>Home</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="/static/lib/bootstrap.min.css">
+    <script src="/static/databaseAPI.js"></script>
+
+    <script>
+
+        $(function() {
+            //$("#logSuccess").show(2000).delay(800).hide(2000);
+        });
+
+        // Append transaction categories to dropdown menu.
+        $(function() {
+            var categories = getCategories().sort();
+            console.log(categories);
+            var options = "";
+            for(var i = 0; i < categories.length; i++) {
+                options += "<option>" + categories[i] + "</options>";
+            }
+            $("#selectType").append(options);
+        });
+
+        // Append date and placeholder to date field.
+        // $(function() {
+        //     var today = new Date();
+        //     $("#inputDate").val(today.getMonth() + 1 + "/" + today.getDate() + "/" + today.getFullYear());
+        //     document.getElementById("inputDate").placeholder = today.getMonth() + 1 + "/" + today.getDate() + "/" + today.getFullYear();
+        // });
+
+        // Post transaction on submit.
+        $(function() {
+            $("#submitBtn").on("click", function() {
+                $("#logError").hide();
+                var Trans = {
+                    amount: parseFloat($("#inputAmount").val()).toFixed(2),
+                    //dateStr: $("#inputDate").val(),
+                    dateStr: new Date(),
+                    category: $("#selectType option:selected").text(),
+                    account: $(".account:checked").val(),
+                    //transactionID: getNewID(), TODO: uncomment when deployed.
+                    transactionID: "0",
+                    description: $("#inputDescription").val()
+                };
+                var invalidFields = validateTransaction(Trans);
+                if(invalidFields.length > 0) {
+                    //console.log(invalidFields);
+                    for(var i = 0; i < invalidFields.length; i++) {
+                        $("#logError").append("<p>Invalid input given in " + invalidFields[i] + " field.</p>");
+                    }
+                    $("#logError").show("slow");
+                }
+                else {
+                    //console.log("Valid Transaction.");
+                    //console.log(Trans);
+                    $("#logSuccess").show(2000).delay(800).hide(2000);
+                    clearFields();
+                    completeTransaction(Trans);
+                }
+            });
+        });
+
+        function validateTransaction(t) {
+            var invalidFields = [];
+            if(isNaN(t.amount)) {
+                invalidFields.push("Amount");
+            }
+            if(t.category == "") {
+                invalidFields.push("Transaction Type")
+            }
+            // if(isNaN(Date.parse(t.dateStr))) {
+            //     invalidFields.push("Date")
+            // }
+            return invalidFields;
+        }
+
+        function clearFields() {
+            $("#inputAmount").val("");
+            $("#selectType").val("");
+            $("#inputDescription").val("");
+        }
+
+        $(function() {
+            $("#submitTransferBtn").on("click", function() {
+                $("#logTransferError").hide();
+                var transfer = {
+                    to: $("#selectTo option:selected").text(),
+                    from: $("#selectFrom option:selected").text(),
+                    amount: parseFloat($("#inputTransferAmount").val()).toFixed(2),
+                    date: new Date()
+                }
+                var invalidFields = validateTranfer(transfer);
+                if(invalidFields.length > 0) {
+                    for(var i = 0; i < invalidFields.length; i++) {
+                        $("#logTransferError").append("<p>Invalid input given in " + invalidFields[i] + " field.</p>");
+                    }
+                    $("#logTransferError").show("slow");
+                }
+                else {
+                    $("#logTransferSuccess").show(2000).delay(800).hide(2000);
+                    clearTransferFields();
+                    completeTransfer(transfer);
+                }
+            });
+        });
+
+        function validateTransfer(t) {
+            var invalidFields = [];
+            if(isNaN(t.amount)) {
+                invalidFields.push("Amount");
+            }
+            if(t.to == "") {
+                invalidFields.push("To Account");
+            }
+            if(t.from == "") {
+                invalidFields.push("From Account");
+            }
+            return invalidFields;
+        }
+
+        function clearTransferFields() {
+            $("#inputTransferAmount").val("");
+            $("#selectTo").val("");
+            $("#selectFrom").val("");
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Top Nav Bar -->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">My Finances</a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li><a href="/monthlySpending">Monthly Spending</a></li>
+                    <li><a href="#">Link</a></li>
+                    <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Accounts <span class="caret"></span></a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="/allTransactions">View All Transactions</a></li>
+                        <li class="divider"></li>
+                        <li><a href="/checking">Checking</a></li>
+                        <li class="divider"></li>
+                        <li><a href="/reserve">Reserve</a></li>
+                        <li class="divider"></li>
+                        <li><a href="/growth">Growth</a></li>
+                    </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Transaction Log Div -->
+    <div class="panel panel-primary" style="width: 700px;">
+        <div class="panel-heading">
+            <h1 class="panel-title">Log Transaction</h1>
+        </div>
+        <div class="panel-body">
+
+            <!-- Error -->
+            <div class="alert alert-dismissible alert-danger" id="logError" style="display: none;">
+                <strong>Error!</strong>
+            </div>
+
+            <!-- Success -->
+            <div class="alert alert-dismissible alert-success" id="logSuccess" style="display: none;">
+                <strong>Transaction Successful!</strong>
+            </div>
+
+            <!-- Transaction Form -->
+            <form class="form-horizontal">
+                <fieldset>
+                    <div class="form-group">
+                        <label for="inputAmount" class="col-lg-2 control-label">Amount</label>
+                        <div class="col-lg-10" style="width: 300px;">
+                            <div class="input-group">
+                                <span class="input-group-addon">$</span>
+                                <input class="form-control" type="text" placeholder="0.00" id="inputAmount" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-lg-2 control-label">Account</label>
+                        <div class="col-lg-10">
+                            <div class="radio">
+                                <label>
+                                    <input name="optionsRadios" class="account" id="checking" value="Checking" checked="" type="radio">
+                                    Checking
+                                </label>
+                            </div>
+                            <div class="radio">
+                                <label>
+                                    <input name="optionsRadios" class="account" id="reserve" value="Reserve" type="radio">
+                                    Reserve
+                                </label>
+                            </div>
+                            <div class="radio">
+                                <label>
+                                    <input name="optionsRadios" class="account" id="growth" value="Growth" type="radio">
+                                    Growth
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="selectType" class="col-lg-2 control-label">Transaction Type</label>
+                        <div class="col-lg-10">
+                            <select class="form-control" id="selectType" style="width: 300px;"><option value=""></option></select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputDescription" class="col-lg-2 control-label">Description</label>
+                        <div class="col-lg-10">
+                            <input class="form-control" id="inputDescription" placeholder="" type="text" style="width: 300px;">
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+
+            <div class="col-lg-10 col-lg-offset-2">
+                <button class="btn btn-primary" id="submitBtn">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-primary" style="width: 700px;">
+        <div class="panel-heading">
+            <h1 class="panel-title">Transfer Money Between Accounts</h1>
+        </div>
+        <div class="panel-body">
+
+            <!-- Error -->
+            <div class="alert alert-dismissible alert-danger" id="logTransferError" style="display: none;">
+                <strong>Error!</strong>
+            </div>
+
+            <!-- Success -->
+            <div class="alert alert-dismissible alert-success" id="logTransferSuccess" style="display: none;">
+                <strong>Transaction Successful!</strong>
+            </div>
+
+            <form class="form-horizontal">
+                <fieldset>
+                    <div class="form-group">
+                        <label for="selectFrom" class="col-lg-2 control-label">From</label>
+                        <div class="col-lg-10">
+                            <select class="form-control" id="selectFrom" style="width: 300px;">
+                                <option value=""></option>
+                                <option>Checking</option>
+                                <option>Reserve</option>
+                                <option>Growth</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="selectTo" class="col-lg-2 control-label">To</label>
+                        <div class="col-lg-10">
+                            <select class="form-control" id="selectTo" style="width: 300px;">
+                                <option value=""></option>
+                                <option>Checking</option>
+                                <option>Reserve</option>
+                                <option>Growth</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputTransferAmount" class="col-lg-2 control-label">Amount</label>
+                        <div class="col-lg-10" style="width: 300px;">
+                            <div class="input-group">
+                                <span class="input-group-addon">$</span>
+                                <input class="form-control" type="text" placeholder="0.00" id="inputTransferAmount" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+            <div class="col-lg-10 col-lg-offset-2">
+                <button class="btn btn-primary" id="submitTransferBtn">Submit</button>
+            </div>
+        </div>
+    </div>
+</body>
